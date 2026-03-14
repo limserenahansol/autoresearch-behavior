@@ -1,0 +1,4 @@
+task,per_mouse_acc,accuracy,f1_macro,duration_s
+Period (5-class),0.933036,0.931507,0.920937,8.2
+Substance (2-class),0.933036,0.931507,0.925539,7.2
+Group (2-class),0.812906,0.812785,0.808701,7.3

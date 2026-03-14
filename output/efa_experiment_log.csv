@@ -1,0 +1,12 @@
+experiment,method,scaler,n_features,n_factors,rotation,stability,var_explained,n_high_loading,quality_score,description
+0,PCA,StandardScaler,48,3,none,0.379,0.748,0,0.414,"Baseline: all features + pupil, 3 deltas, PCA"
+1,PCA,StandardScaler,16,3,none,0.309,0.937,4,0.485,"8 core features, 2 deltas, PCA"
+2,PCA,RobustScaler,16,2,none,0.489,0.875,2,0.532,"8 features, 2 factors, RobustScaler"
+3,EFA,RobustScaler,16,2,varimax,0.509,0.743,12,0.627,"EFA varimax rotation"
+4,EFA,RobustScaler,30,2,varimax,0.523,0.584,21,0.577,"+Withdrawal +pharma features"
+5,EFA,RobustScaler,30,3,varimax,0.398,0.636,22,0.537,"3 factors with pharma"
+6,EFA,RobustScaler,16,2,varimax,0.457,0.580,11,0.540,"Log-transform"
+7,EFA,RobustScaler,16,2,quartimax,0.579,0.743,12,0.663,"Quartimax rotation"
+8,EFA,RobustScaler,12,2,quartimax,0.643,0.938,12,0.803,"6 core features only"
+9,EFA,RobustScaler,12,1,none,0.574,0.887,12,0.753,"Single factor"
+10,EFA,RobustScaler,18,2,quartimax,0.791,0.841,18,0.848,"BEST: 6 features x 3 deltas"

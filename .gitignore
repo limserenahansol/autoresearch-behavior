@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Backups (old pipeline snapshots)
+backups/
+
+# Large binary files (npy)
+# Keep them -- they are small (<1MB total)
+
+# Raw data (not included -- too large)
+# Data source: K:\addiction_concate_Dec_2025\longitudinal_outputs\run_009\
+# Users must set DATA_PATH in prepare.py and prepare_efa.py
