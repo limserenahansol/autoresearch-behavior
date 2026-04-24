@@ -22,7 +22,7 @@ This file lives in the **autoresearch-behavior** repo (`https://github.com/limse
 - **New modules**: `surrogate_day_triage_core.py`, `behavior_surrogate_day_triage.py`, `neural_behavior_surrogate_day_triage.py`.
 - **Goal**: **Screen** which **columns** (behavior features now, neurons later) help distinguish **observed** mouse–day rows from **surrogate** rows built by swapping in feature vectors from **another day of the same mouse** (a day-resolution control when trial-level time shuffles are not available).
 - **Target label**: Binary **real (1) vs surrogate (0)** on **duplicated** rows (balanced); evaluated with **LOMO** on `mouse_key`.
-- **Null model**: **Label permutation** shuffle distribution of LOMO accuracy. **Benjamini–Hochberg FDR** (q = 0.05) on permutation *p*-values across columns.
+- **Null model**: **Label permutation** shuffle distribution of LOMO accuracy (right-sided *p* = P(null ≥ obs)). **Effect size**: *d*′-style *z* = (obs − mean(null)) / std(null). **Multiple testing**: Benjamini–Hochberg FDR (q = 0.05) and **Holm–Bonferroni** adjusted *p* (family-wise conservative). **Screening gate** (optional, for permissive pre-GLM-style filtering): `d_prime_vs_shuffle ≥ 1` and `p < 0.1` by default (`--dprime-min`, `--screening-alpha`). With tens of thousands of units, Holm can be very strict for gating; the gate emphasizes effect size + shuffle *p* as in common practice.
 - **Outputs**: CSVs under `output/surrogate_day_triage_behavior/` and `output/surrogate_day_triage_neural_behavior/` (population summary + per-feature or split per-neuron vs behavior tables). Optional bar chart for top behavior features.
 - **Neural path (future)**: `--neural-csv` merged on `mouse_key` + `day_index`; `--demo-synthetic` runs without a neural file.
 
@@ -58,7 +58,7 @@ This file lives in the **autoresearch-behavior** repo (`https://github.com/limse
 - **새 파일**: `surrogate_day_triage_core.py`, `behavior_surrogate_day_triage.py`, `neural_behavior_surrogate_day_triage.py`.
 - **목적**: **같은 마우스의 다른 날** 특징으로 만든 **surrogate(대체)** 행과 **실제** 행을 구분하는 데 기여하는 **열(특징/뉴런)** 선별. (trial 단위 시계열이 없을 때의 **일 단위** 통제에 해당.)
 - **레이블**: **실제(1) vs surrogate(0)** 이진, **LOMO**.
-- **널**: 레이블 **순열** + **FDR**.
+- **널**: 레이블 **순열**(우측 p), **d_prime_vs_shuffle**(shuffle 평균·표준편차 대비 z), **BH-FDR** + **Holm** 보정 p, **게이트**(기본 d′≥1 & p<0.1, `--dprime-min` 등).
 - **결과물**: `output/surrogate_day_triage_behavior/`, `output/surrogate_day_triage_neural_behavior/`.
 
 ### 기존과의 **차이** (요약표)

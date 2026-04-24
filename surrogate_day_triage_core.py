@@ -12,7 +12,11 @@ Evaluation:
   - Label-shuffle null: permute y, rerun LOMO, build a null distribution of accuracy.
   - Per-column (per-feature or per-neuron) univariate decoding with the same protocol.
 
-Multiple comparisons: Benjamini-Hochberg FDR on permutation p-values.
+Multiple comparisons:
+  - Benjamini–Hochberg FDR on permutation *p*-values (discovery-oriented).
+  - Holm–Bonferroni adjusted *p* (family-wise conservative; optional for gating).
+Effect size: *d*′-style *z* = (observed accuracy − mean shuffle null) / std(null), right-sided
+permutation *p* = P(null ≥ obs) (same as before).
 """
 from __future__ import annotations
 
@@ -125,10 +129,50 @@ def shuffle_null_distribution(
 
 
 def permutation_p_value(obs: float, null_dist: np.ndarray) -> float:
-    """Inclusive permutation p-value."""
+    """Right-sided inclusive permutation p-value: P(null >= obs)."""
     n = len(null_dist)
     ge = np.sum(null_dist >= obs)
     return float((1 + ge) / (1 + n))
+
+
+def shuffle_null_summary(obs: float, null_dist: np.ndarray) -> dict:
+    """Mean/std of shuffle null, d-prime-style z, and exceedance of null high quantiles."""
+    null_dist = np.asarray(null_dist, dtype=float)
+    mu = float(np.mean(null_dist))
+    sd = float(np.std(null_dist))
+    if sd < 1e-12:
+        d_prime = 0.0
+    else:
+        d_prime = float((obs - mu) / sd)
+    return {
+        "shuffle_null_mean": mu,
+        "shuffle_null_std": sd,
+        "d_prime_vs_shuffle": d_prime,
+        "exceeds_shuffle_q95": bool(obs > float(np.quantile(null_dist, 0.95))),
+        "exceeds_shuffle_q99": bool(obs > float(np.quantile(null_dist, 0.99))),
+    }
+
+
+def holm_adjusted_pvalues(p_values: np.ndarray) -> np.ndarray:
+    """Holm–Bonferroni adjusted p-values (same length/order as input). NaNs ignored then restored."""
+    p = np.asarray(p_values, dtype=float)
+    m = len(p)
+    out = np.full(m, np.nan)
+    ok = np.isfinite(p) & (p >= 0) & (p <= 1)
+    if ok.sum() == 0:
+        return out
+    idx = np.where(ok)[0]
+    pv = p[idx]
+    order = np.argsort(pv)
+    sp = pv[order]
+    n = len(sp)
+    adj_sorted = np.empty(n)
+    for i in range(n):
+        adj_sorted[i] = max(min(1.0, (n - j) * sp[j]) for j in range(i + 1))
+    adj = np.empty(n)
+    adj[order] = adj_sorted
+    out[idx] = adj
+    return out
 
 
 def benjamini_hochberg(p_values: np.ndarray, q: float = 0.05) -> np.ndarray:
@@ -154,11 +198,24 @@ def per_column_lomo_scan(
     n_shuffles: int,
     shuffle_seed: int,
     scan_factory=None,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+]:
     """
-    For each column j, univariate LOMO accuracy + shuffle null p-value.
+    For each column j, univariate LOMO accuracy + shuffle null.
+
     scan_factory: optional lighter classifier for per-column work (defaults to model_factory).
-    Returns (acc_per_col, p_per_col, bacc_per_col, valid_mask).
+
+    Returns:
+        acc, pval, bacc, valid,
+        shuffle_null_mean, shuffle_null_std, d_prime_vs_shuffle, exceeds_shuffle_q95
     """
     mf = scan_factory if scan_factory is not None else model_factory
     n, d = X.shape
@@ -166,6 +223,10 @@ def per_column_lomo_scan(
     bacc = np.full(d, np.nan)
     pval = np.full(d, np.nan)
     valid = np.zeros(d, dtype=bool)
+    null_mean = np.full(d, np.nan)
+    null_std = np.full(d, np.nan)
+    d_prime = np.full(d, np.nan)
+    ex_q95 = np.zeros(d, dtype=bool)
 
     for j in range(d):
         Xj = X[:, j : j + 1]
@@ -178,9 +239,14 @@ def per_column_lomo_scan(
         acc[j] = a
         bacc[j] = ba
         pval[j] = permutation_p_value(a, null)
+        summ = shuffle_null_summary(a, null)
+        null_mean[j] = summ["shuffle_null_mean"]
+        null_std[j] = summ["shuffle_null_std"]
+        d_prime[j] = summ["d_prime_vs_shuffle"]
+        ex_q95[j] = summ["exceeds_shuffle_q95"]
         valid[j] = True
 
-    return acc, pval, bacc, valid
+    return acc, pval, bacc, valid, null_mean, null_std, d_prime, ex_q95
 
 
 def default_binary_factory():

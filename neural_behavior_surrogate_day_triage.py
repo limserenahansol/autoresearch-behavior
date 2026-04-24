@@ -41,7 +41,9 @@ from surrogate_day_triage_core import (
     per_column_lomo_scan,
     permutation_p_value,
     shuffle_null_distribution,
+    shuffle_null_summary,
 )
+from surrogate_triage_reporting import holm_on_valid
 
 OUTPUT = Path(__file__).parent / "output" / "surrogate_day_triage_neural_behavior"
 
@@ -66,6 +68,13 @@ def main():
     p.add_argument("--n-shuffles", type=int, default=80)
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--fast", action="store_true")
+    p.add_argument("--dprime-min", type=float, default=1.0, help="Screening gate: d_prime_vs_shuffle >= this.")
+    p.add_argument(
+        "--screening-alpha",
+        type=float,
+        default=0.1,
+        help="Screening gate: permutation_p_right_sided < this.",
+    )
     args = p.parse_args()
 
     OUTPUT.mkdir(parents=True, exist_ok=True)
@@ -119,6 +128,7 @@ def main():
         X_aug, y_aug, mk_aug, factory, args.n_shuffles, args.seed + 999
     )
     p_pop = permutation_p_value(pop_acc, null_pop)
+    pop_sum = shuffle_null_summary(pop_acc, null_pop)
     pop_df = pd.DataFrame(
         [
             {
@@ -126,11 +136,19 @@ def main():
                 "lomo_balanced_accuracy": pop_bacc,
                 "shuffle_median": float(np.median(null_pop)),
                 "shuffle_q95": float(np.quantile(null_pop, 0.95)),
-                "permutation_p": p_pop,
+                "shuffle_q99": float(np.quantile(null_pop, 0.99)),
+                "shuffle_null_mean": pop_sum["shuffle_null_mean"],
+                "shuffle_null_std": pop_sum["shuffle_null_std"],
+                "d_prime_vs_shuffle": pop_sum["d_prime_vs_shuffle"],
+                "exceeds_shuffle_q95": pop_sum["exceeds_shuffle_q95"],
+                "exceeds_shuffle_q99": pop_sum["exceeds_shuffle_q99"],
+                "permutation_p_right_sided": p_pop,
                 "n_shuffles": args.n_shuffles,
                 "n_rows_augmented": len(y_aug),
                 "n_columns_total": X.shape[1],
                 "demo_synthetic": bool(args.demo_synthetic),
+                "screening_dprime_min": args.dprime_min,
+                "screening_alpha": args.screening_alpha,
             }
         ]
     )
@@ -143,7 +161,7 @@ def main():
     )
 
     n_sh = min(args.n_shuffles, 40) if args.fast else args.n_shuffles
-    acc, pvals, bacc, valid = per_column_lomo_scan(
+    acc, pvals, bacc, valid, null_mean, null_std, dprime, ex_q95 = per_column_lomo_scan(
         X_aug,
         y_aug,
         mk_aug,
@@ -153,18 +171,27 @@ def main():
         scan_factory=fast_binary_factory,
     )
     fdr = benjamini_hochberg(np.where(valid, pvals, 1.0), q=0.05)
+    holm_adj, holm_reject = holm_on_valid(pvals, valid)
 
     neu_name_set = set(neu_names)
     beh_rows, neu_rows = [], []
     for j, name in enumerate(feat_names):
         if not valid[j]:
             continue
+        gate = bool(dprime[j] >= args.dprime_min and pvals[j] < args.screening_alpha)
         row = {
             "name": name,
             "lomo_accuracy": acc[j],
             "lomo_balanced_accuracy": bacc[j],
-            "permutation_p": pvals[j],
-            "fdr_q0.05": bool(fdr[j]),
+            "shuffle_null_mean": null_mean[j],
+            "shuffle_null_std": null_std[j],
+            "d_prime_vs_shuffle": dprime[j],
+            "exceeds_shuffle_q95": bool(ex_q95[j]),
+            "permutation_p_right_sided": pvals[j],
+            "holm_adjusted_p": holm_adj[j],
+            "holm_pass_alpha0.05": bool(holm_reject[j]),
+            "fdr_q0.05_bh": bool(fdr[j]),
+            "gate_dprime_and_perm_p": gate,
         }
         if name in neu_name_set:
             neu_rows.append(row)
@@ -174,11 +201,13 @@ def main():
     if neu_rows:
         ndf = pd.DataFrame(neu_rows).sort_values("lomo_accuracy", ascending=False)
         ndf.to_csv(OUTPUT / "per_neuron_triage.csv", index=False)
-        print(f"Wrote {OUTPUT / 'per_neuron_triage.csv'} ({len(ndf)} units)")
+        g = int(ndf["gate_dprime_and_perm_p"].sum())
+        print(f"Wrote {OUTPUT / 'per_neuron_triage.csv'} ({len(ndf)} units, screening gate: {g})")
     if beh_rows:
         bdf = pd.DataFrame(beh_rows).sort_values("lomo_accuracy", ascending=False)
         bdf.to_csv(OUTPUT / "per_behavior_feature_triage.csv", index=False)
-        print(f"Wrote {OUTPUT / 'per_behavior_feature_triage.csv'} ({len(bdf)} features)")
+        g = int(bdf["gate_dprime_and_perm_p"].sum())
+        print(f"Wrote {OUTPUT / 'per_behavior_feature_triage.csv'} ({len(bdf)} features, gate: {g})")
 
 
 if __name__ == "__main__":

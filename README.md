@@ -61,7 +61,8 @@ visualize_decoder.py            # Generate presentation figures
 compare_results.py              # Experiment comparison
 behavior_surrogate_day_triage.py       # Surrogate-day triage (behavior only)
 neural_behavior_surrogate_day_triage.py # Same + merged neural CSV
-surrogate_day_triage_core.py          # Shared LOMO / shuffle-null / FDR helpers
+surrogate_day_triage_core.py          # LOMO, shuffle null, Holm, d-prime summaries
+surrogate_triage_reporting.py         # Holm on valid per-column p-values
 ```
 
 ### Figures (`output/figures/`)
@@ -80,7 +81,7 @@ surrogate_day_triage_core.py          # Shared LOMO / shuffle-null / FDR helpers
 
 ### Surrogate-day triage (real vs random-within-mouse day)
 
-For **mouse × day** tables (no trial-level timestamps), each **surrogate** row uses the feature vector from **another day of the same mouse** (random-day surrogate), labeled vs the **observed** row. A column (behavior feature or neuron) is flagged if **univariate** decoding under **LOMO** beats a **label-shuffle** null; population decoding uses all columns together. See `surrogate_day_triage_core.py` for details.
+For **mouse × day** tables (no trial-level timestamps), each **surrogate** row uses the feature vector from **another day of the same mouse** (random-day surrogate), labeled vs the **observed** row. Outputs include shuffle-null mean/std, **d_prime_vs_shuffle**, right-sided permutation *p*, **Holm** and **BH-FDR** passes, and an optional **screening gate** (default *d*′ ≥ 1 and *p* < 0.1). See `surrogate_day_triage_core.py` for details.
 
 | Script | When to use |
 |--------|-------------|
@@ -95,6 +96,12 @@ python neural_behavior_surrogate_day_triage.py --demo-synthetic --fast   # dry r
 ```
 
 Outputs: `output/surrogate_day_triage_behavior/` and `output/surrogate_day_triage_neural_behavior/` (CSVs + optional bar plot).
+
+**CSV columns (triage):** `shuffle_null_mean` / `shuffle_null_std`, **d_prime_vs_shuffle** (effect size vs label-shuffle null), `permutation_p_right_sided`, **Holm**-adjusted *p* + `holm_pass_alpha0.05`, **BH-FDR** `fdr_q0.05_bh`, `exceeds_shuffle_q95`, optional **screening gate** `gate_dprime_and_perm_p` (defaults: `d_prime >= 1` and `p < 0.1`; tune with `--dprime-min`, `--screening-alpha`). Population file includes the same summaries for the pooled model.
+
+```bash
+python behavior_surrogate_day_triage.py --fast --dprime-min 1.0 --screening-alpha 0.1
+```
 
 **Bilingual note — original decoder vs surrogate-day triage:** [`docs/SURROGATE_DAY_TRIAGE_PIPELINE_KR_EN.md`](docs/SURROGATE_DAY_TRIAGE_PIPELINE_KR_EN.md) (English + 한국어).
 
@@ -299,7 +306,8 @@ autoresearch/
 ├── run_all_classifiers.py            # All 3 decoder tasks (original)
 ├── run_all_classifiers_with_pupil.py # All 3 decoder tasks (+ pupil)
 ├── run_cross_generalization.py       # Cross-condition analysis (Parts A-E)
-├── surrogate_day_triage_core.py      # LOMO + shuffle-null helpers for surrogate-day triage
+├── surrogate_day_triage_core.py      # LOMO + shuffle-null + Holm / d-prime helpers
+├── surrogate_triage_reporting.py     # Holm mapping onto valid per-column p-values
 ├── behavior_surrogate_day_triage.py # Behavior-only surrogate-day triage
 ├── neural_behavior_surrogate_day_triage.py # Behavior + neural merge, same triage
 │
