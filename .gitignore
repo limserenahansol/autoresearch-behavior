@@ -35,3 +35,6 @@ output/surrogate_day_triage_neural_behavior/
 # Legacy output folder names (do not commit)
 output/michelle_style_behavior/
 output/michelle_style_neural_behavior/
+
+# Local benchmark notes (regenerate if needed)
+output/benchmark_decoder_vs_surrogate_day/
