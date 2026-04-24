@@ -32,3 +32,6 @@ backups/
 # Surrogate-day triage run outputs (regenerate with scripts)
 output/surrogate_day_triage_behavior/
 output/surrogate_day_triage_neural_behavior/
+# Legacy output folder names (do not commit)
+output/michelle_style_behavior/
+output/michelle_style_neural_behavior/
