@@ -59,9 +59,9 @@ run_all_classifiers.py          # Run all 3 tasks (original features)
 run_all_classifiers_with_pupil.py  # Run all 3 tasks (+ pupil_reward_peak)
 visualize_decoder.py            # Generate presentation figures
 compare_results.py              # Experiment comparison
-michelle_style_behavior_triage.py       # Real-vs-fake triage (behavior only)
-michelle_style_neural_behavior_triage.py # Same + merged neural CSV
-michelle_style_core.py          # Shared LOMO / shuffle-null / FDR helpers
+behavior_surrogate_day_triage.py       # Surrogate-day triage (behavior only)
+neural_behavior_surrogate_day_triage.py # Same + merged neural CSV
+surrogate_day_triage_core.py          # Shared LOMO / shuffle-null / FDR helpers
 ```
 
 ### Figures (`output/figures/`)
@@ -78,25 +78,25 @@ michelle_style_core.py          # Shared LOMO / shuffle-null / FDR helpers
 | `feature_importance.png` | Top 20 features (Gini importance) |
 | `autoresearch_improvement.png` | Optimization trajectory |
 
-### Michelle-style triage (adapted from real-vs-fake decoding)
+### Surrogate-day triage (real vs random-within-mouse day)
 
-For **mouse × day** tables (no trial-level timestamps), this mirrors the idea of **real vs time-shuffled surrogates** by labeling **real** rows vs **fake** rows built from **another day of the same mouse** (random-day surrogate). A column (behavior feature or neuron) is flagged if **univariate** real-vs-fake decoding under **LOMO** beats a **label-shuffle** null; population decoding uses all columns together. See module docstrings in `michelle_style_core.py` for details.
+For **mouse × day** tables (no trial-level timestamps), each **surrogate** row uses the feature vector from **another day of the same mouse** (random-day surrogate), labeled vs the **observed** row. A column (behavior feature or neuron) is flagged if **univariate** decoding under **LOMO** beats a **label-shuffle** null; population decoding uses all columns together. See `surrogate_day_triage_core.py` for details.
 
 | Script | When to use |
 |--------|-------------|
-| `michelle_style_behavior_triage.py` | Current pipeline: behavior (+ engineered) features only. |
-| `michelle_style_neural_behavior_triage.py` | After merge: same protocol on **behavior ‖ neural** columns (`--neural-csv` with `mouse_key`, `day_index`, `neuron_*`). |
+| `behavior_surrogate_day_triage.py` | Current pipeline: behavior (+ engineered) features only. |
+| `neural_behavior_surrogate_day_triage.py` | After merge: same protocol on **behavior ‖ neural** columns (`--neural-csv` with `mouse_key`, `day_index`, `neuron_*`). |
 
 ```bash
-python michelle_style_behavior_triage.py --fast
-python michelle_style_behavior_triage.py --csv path/to/features_day_level.csv --n-shuffles 100
-python michelle_style_neural_behavior_triage.py --neural-csv neural_mouse_day.csv
-python michelle_style_neural_behavior_triage.py --demo-synthetic --fast   # dry run, no neural file
+python behavior_surrogate_day_triage.py --fast
+python behavior_surrogate_day_triage.py --csv path/to/features_day_level.csv --n-shuffles 100
+python neural_behavior_surrogate_day_triage.py --neural-csv neural_mouse_day.csv
+python neural_behavior_surrogate_day_triage.py --demo-synthetic --fast   # dry run, no neural file
 ```
 
-Outputs: `output/michelle_style_behavior/` and `output/michelle_style_neural_behavior/` (CSVs + optional bar plot).
+Outputs: `output/surrogate_day_triage_behavior/` and `output/surrogate_day_triage_neural_behavior/` (CSVs + optional bar plot).
 
-**Bilingual note — original vs new triage:** [`docs/PIPELINE_COMPARISON_KR_EN.md`](docs/PIPELINE_COMPARISON_KR_EN.md) (English + 한국어).
+**Bilingual note — original decoder vs surrogate-day triage:** [`docs/SURROGATE_DAY_TRIAGE_PIPELINE_KR_EN.md`](docs/SURROGATE_DAY_TRIAGE_PIPELINE_KR_EN.md) (English + 한국어).
 
 ---
 
@@ -299,6 +299,9 @@ autoresearch/
 ├── run_all_classifiers.py            # All 3 decoder tasks (original)
 ├── run_all_classifiers_with_pupil.py # All 3 decoder tasks (+ pupil)
 ├── run_cross_generalization.py       # Cross-condition analysis (Parts A-E)
+├── surrogate_day_triage_core.py      # LOMO + shuffle-null helpers for surrogate-day triage
+├── behavior_surrogate_day_triage.py # Behavior-only surrogate-day triage
+├── neural_behavior_surrogate_day_triage.py # Behavior + neural merge, same triage
 │
 ├── extract_pupil_feature.py          # Extract pupil_reward_peak from raw CSV
 ├── generate_pupil_trajectory.py      # Daily pupil trajectory

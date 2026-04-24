@@ -1,15 +1,15 @@
 """
-Shared utilities for Michelle-style triage adapted to mouse-day behavior / neural data.
+Shared utilities for **surrogate-day triage** on mouse-day behavior and optional neural data.
 
-Real vs fake (behavior analogue, day-level data):
+Real vs surrogate (day-level data):
   - "Real" rows: observed (mouse, day) feature vectors with label y=1.
-  - "Fake" rows: same mouse, feature vector copied from a *different* day of that mouse
-    (random-day surrogate). Label y=0.  This mirrors "aligned to real event vs random time"
-    when the only resolution is mouse x day rather than continuous time.
+  - "Surrogate" rows: same mouse, feature vector copied from a *different* day of that mouse
+    (random-day surrogate). Label y=0.  At day resolution this plays a similar role to
+    "aligned to real event vs random time" when trial-level timestamps are not available.
 
 Evaluation:
-  - Leave-one-mouse-out (LOMO) on the augmented dataset (each mouse contributes real+fake rows).
-  - Trial / label shuffle null: permute y, rerun LOMO, build a null distribution of accuracy.
+  - Leave-one-mouse-out (LOMO) on the augmented dataset (each mouse contributes real+surrogate rows).
+  - Label-shuffle null: permute y, rerun LOMO, build a null distribution of accuracy.
   - Per-column (per-feature or per-neuron) univariate decoding with the same protocol.
 
 Multiple comparisons: Benjamini-Hochberg FDR on permutation p-values.
@@ -36,7 +36,6 @@ def build_real_fake_dataset(
     mice = np.unique(mouse_keys)
     for m in mice:
         idx = np.where(mouse_keys == m)[0]
-        Xi = X[idx]
         if len(idx) == 1:
             others = np.setdiff1d(np.arange(n), idx, assume_unique=True)
             pick = rng.integers(0, len(others), size=1)[0]

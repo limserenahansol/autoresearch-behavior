@@ -1,18 +1,18 @@
 """
-Michelle-style triage on behavior-only (mouse x day) data.
+Surrogate-day triage on behavior-only (mouse x day) data.
 
 Runs:
-  1) Population real-vs-fake decoding (LOMO) + label-shuffle null.
-  2) Per-feature univariate real-vs-fake decoding + permutation p-values + FDR.
+  1) Population real-vs-surrogate decoding (LOMO) + label-shuffle null.
+  2) Per-feature univariate decoding + permutation p-values + FDR.
 
-Outputs under output/michelle_style_behavior/:
+Outputs under output/surrogate_day_triage_behavior/:
   population_real_fake.csv
   per_feature_triage.csv
   optional figure per_feature_real_fake.png
 
 Usage:
-  python michelle_style_behavior_triage.py
-  python michelle_style_behavior_triage.py --csv path/to/features_day_level.csv --fast --n-shuffles 80
+  python behavior_surrogate_day_triage.py
+  python behavior_surrogate_day_triage.py --csv path/to/features_day_level.csv --fast --n-shuffles 80
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from michelle_style_core import (
+from surrogate_day_triage_core import (
     benjamini_hochberg,
     build_real_fake_dataset,
     default_binary_factory,
@@ -37,7 +37,7 @@ from michelle_style_core import (
 )
 from prepare import PERIOD_ORDER
 
-OUTPUT = Path(__file__).parent / "output" / "michelle_style_behavior"
+OUTPUT = Path(__file__).parent / "output" / "surrogate_day_triage_behavior"
 
 
 def load_behavior_frame(csv_path: str | None):
@@ -54,7 +54,9 @@ def load_behavior_frame(csv_path: str | None):
 
 
 def main():
-    p = argparse.ArgumentParser(description="Behavior-only Michelle-style real-vs-fake triage.")
+    p = argparse.ArgumentParser(
+        description="Behavior-only surrogate-day triage (real vs within-mouse random-day surrogate)."
+    )
     p.add_argument("--csv", type=str, default=None, help="Override features CSV (else prepare.DATA_PATH).")
     p.add_argument(
         "--n-shuffles",
@@ -107,7 +109,7 @@ def main():
     pop_df.to_csv(pop_path, index=False)
     print(f"Wrote {pop_path}")
     print(
-        f"Population real-vs-fake LOMO acc={pop_acc:.4f}, balanced_acc={pop_bacc:.4f}, "
+        f"Population real-vs-surrogate LOMO acc={pop_acc:.4f}, balanced_acc={pop_bacc:.4f}, "
         f"shuffle p={p_pop:.4g} (median null {np.median(null_pop):.4f})"
     )
 
@@ -149,8 +151,8 @@ def main():
             ax.barh(top["feature"], top["lomo_accuracy"], color="steelblue")
             ax.axvline(0.5, color="gray", linestyle="--", linewidth=1)
             ax.axvline(float(np.median(null_pop)), color="coral", linestyle=":", label="pop. shuffle median")
-            ax.set_xlabel("LOMO accuracy (univariate real vs fake)")
-            ax.set_title("Behavior features: Michelle-style triage (top 25)")
+            ax.set_xlabel("LOMO accuracy (univariate real vs surrogate day)")
+            ax.set_title("Surrogate-day triage: behavior features (top 25)")
             ax.legend(loc="lower right", fontsize=8)
             fig.tight_layout()
             fig_path = OUTPUT / "per_feature_real_fake.png"

@@ -1,24 +1,24 @@
 """
-Michelle-style triage when neural (e.g. GRIN imaging) columns are available alongside behavior.
+Surrogate-day triage when neural (e.g. GRIN imaging) columns are available alongside behavior.
 
 Expected neural CSV:
   - Columns: mouse_key, day_index, plus one column per unit (default prefix neuron_).
 
 The script inner-joins behavior and neural on mouse_key + day_index, runs build_features on the
-merged behavior columns, concatenates neural activity, then runs the same real-vs-fake LOMO +
-shuffle-null protocol as michelle_style_behavior_triage.py.
+merged behavior columns, concatenates neural activity, then runs the same real-vs-surrogate LOMO +
+shuffle-null protocol as behavior_surrogate_day_triage.py.
 
-Outputs (output/michelle_style_neural_behavior/):
+Outputs (output/surrogate_day_triage_neural_behavior/):
   population_real_fake.csv
   per_neuron_triage.csv
   per_behavior_feature_triage.csv
 
 Dry run without a neural file:
-  python michelle_style_neural_behavior_triage.py --demo-synthetic --n-neurons 12
+  python neural_behavior_surrogate_day_triage.py --demo-synthetic --n-neurons 12
 
 Usage:
-  python michelle_style_neural_behavior_triage.py --neural-csv path/to/neural_mouse_day.csv
-  python michelle_style_neural_behavior_triage.py --neural-csv neural.csv --csv behavior.csv
+  python neural_behavior_surrogate_day_triage.py --neural-csv path/to/neural_mouse_day.csv
+  python neural_behavior_surrogate_day_triage.py --neural-csv neural.csv --csv behavior.csv
 """
 from __future__ import annotations
 
@@ -31,8 +31,8 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from michelle_style_behavior_triage import load_behavior_frame
-from michelle_style_core import (
+from behavior_surrogate_day_triage import load_behavior_frame
+from surrogate_day_triage_core import (
     benjamini_hochberg,
     build_real_fake_dataset,
     default_binary_factory,
@@ -43,7 +43,7 @@ from michelle_style_core import (
     shuffle_null_distribution,
 )
 
-OUTPUT = Path(__file__).parent / "output" / "michelle_style_neural_behavior"
+OUTPUT = Path(__file__).parent / "output" / "surrogate_day_triage_neural_behavior"
 
 
 def _pick_neural_columns(neu: pd.DataFrame, neural_prefix: str) -> list[str]:
@@ -55,7 +55,9 @@ def _pick_neural_columns(neu: pd.DataFrame, neural_prefix: str) -> list[str]:
 
 
 def main():
-    p = argparse.ArgumentParser(description="Behavior + neural Michelle-style triage.")
+    p = argparse.ArgumentParser(
+        description="Behavior + neural surrogate-day triage (real vs within-mouse random-day surrogate)."
+    )
     p.add_argument("--csv", type=str, default=None, help="Behavior features CSV (default: prepare.DATA_PATH).")
     p.add_argument("--neural-csv", type=str, default=None, help="Neural mouse x day matrix CSV.")
     p.add_argument("--neural-prefix", type=str, default="neuron_", help="Column name prefix for neural units.")
@@ -136,7 +138,7 @@ def main():
     pop_df.to_csv(pop_path, index=False)
     print(f"Wrote {pop_path}")
     print(
-        f"Population (behavior+neural) real-vs-fake LOMO acc={pop_acc:.4f}, "
+        f"Population (behavior+neural) real-vs-surrogate LOMO acc={pop_acc:.4f}, "
         f"balanced_acc={pop_bacc:.4f}, p={p_pop:.4g}"
     )
 
