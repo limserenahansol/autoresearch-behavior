@@ -96,6 +96,8 @@ python michelle_style_neural_behavior_triage.py --demo-synthetic --fast   # dry 
 
 Outputs: `output/michelle_style_behavior/` and `output/michelle_style_neural_behavior/` (CSVs + optional bar plot).
 
+**Bilingual note — original vs new triage:** [`docs/PIPELINE_COMPARISON_KR_EN.md`](docs/PIPELINE_COMPARISON_KR_EN.md) (English + 한국어).
+
 ---
 
 ## Pipeline 2: Addiction Index (EFA)

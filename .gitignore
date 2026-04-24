@@ -28,3 +28,7 @@ backups/
 # Raw data (not included -- too large)
 # Data source: K:\addiction_concate_Dec_2025\longitudinal_outputs\run_009\
 # Users must set DATA_PATH in prepare.py and prepare_efa.py
+
+# Michelle-style triage run outputs (regenerate with scripts)
+output/michelle_style_behavior/
+output/michelle_style_neural_behavior/
